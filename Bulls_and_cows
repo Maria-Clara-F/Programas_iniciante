@@ -1,0 +1,138 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <locale.h> 
+#include <ctype.h>
+
+#define Vermelho "\x1b[31m"
+#define Verde "\x1b[32m"
+#define RESET "\x1b[0m"
+
+void gerador(int senha[]) {
+    senha[0] = rand() % 10;
+    do {
+    senha[1] = rand() % 10;
+    }while(senha[1] == senha[0]);
+
+    do {
+    senha[2] = rand() % 10;
+    } while(senha[2] == senha[0] || senha[2] == senha[1]);
+
+    do {
+    senha[3] = rand() % 10;
+    }while(senha[3] == senha[0] || senha[3] == senha[1] || senha[3] == senha[2]); 
+}
+
+int ganhador(int senha[], int palpite[]) {
+    if(memcmp(senha, palpite, 4 * sizeof(int)) == 0) {
+        printf(Verde "Parabens! Voce acertou!\n" RESET);
+        return 0;
+    }
+    return 1;
+}
+
+int comparar(int senha[], int *chances, int palpite[]) {
+    int i = 0, k = 0;
+    int bulls=0, cows=0;
+    int senha_usada[4] = {0};
+    int palpite_usado[4] = {0};
+    char *emojis[] = {"\U0001F402 ", "\U0001F42E "};
+
+    for (int i = 0; i < 4; i++) {
+        if (senha[i] == palpite[i]) {
+            bulls++;
+            senha_usada[i] = 1;
+            palpite_usado[i] = 1;
+        }
+    }
+
+    for(int i = 0; i < 4; i++) {
+        if(!palpite_usado[i]) {
+            for(int j = 0; j < 4; j++) {
+                if(!senha_usada[j] && senha[j] == palpite[i]) {
+                    cows++;
+                    senha_usada[j] = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    for(int i = 0; i < bulls; i++) {
+        printf("%s", emojis[0]);
+    }
+    for(int i = 0; i < cows; i++) {
+        printf("%s", emojis[1]);
+    }
+    printf("\n\n");
+
+    (*chances)--;
+    return ganhador(senha, palpite);
+}
+
+int diferentes (int n[]) {
+
+    if(n[0]!=n[1] && n[0]!=n[2] && n[0]!=n[3] && n[1]!=n[2] && n[2]!=n[3] && n[1]!=n[3]) {
+        return 0;
+    } else {
+        printf("Os digitos devem ser diferentes, digite novamente!\n");
+        return 1;
+    }
+}
+
+int ler_int(int palpite[]) {
+    char entrada[4];
+    if(scanf("%9s", entrada)!=1) {
+        return 1;
+    }
+    for(int i = 0; i < 4; i++) {
+        if(!isdigit(entrada[i])) {
+            printf("Entrada invalida! Digite apenas numeros de 0 a 9: ");
+            return 1;
+        }
+        palpite[i] = entrada[i] - '0';
+    }
+    return diferentes(palpite);
+}
+
+void jogo() {
+    int senha[4];
+    int chances = 8;
+    int palpite[4];
+    int c = 1;
+    gerador(senha);
+    do {
+        printf("\nDigite seu palpite: ");
+        while(ler_int(palpite)!=0);
+        c = comparar(senha, &chances, palpite);
+    } while (chances > 0 && c!=0);
+
+    if(chances == 0 && c!=0) {
+        printf(Vermelho "Voce perdeu! A senha era: %d%d%d%d\n\n" RESET, senha[0], senha[1], senha[2], senha[3]);
+    }
+
+}
+
+int main () {
+    char r;
+    setlocale(LC_ALL, "");
+    srand(time(NULL));
+    do {
+        printf("===========================\n");
+        printf("BEM VINDO AO BULLS AND COWS\n");
+        printf("===========================\n");
+        printf("REGRAS:\n[1] Tente adivinhar uma senha numerica de 4 digitos diferentes\n[2] Posicao certa e numero certo: BULL\n[3] Posicao errada numero certo: COW\n[4] 8 tentativas\n");
+        printf("Aperte qualquer tecla + ENTER para iniciar ou 0 para sair:\n");
+        scanf(" %c", &r);
+        if (r == '0') {
+            printf("Saindo...");
+            return 0;
+        } else {
+            jogo();
+        }
+    } while(r != '0');
+
+    return 0;
+}
