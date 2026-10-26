@@ -1,0 +1,199 @@
+#include <stdio.h>
+#include <string.h> 
+#include <ctype.h>
+#include <locale.h> // treco de sistema
+#include <time.h> // srand
+#include <stdlib.h> // system clean
+#include <unistd.h> // sleep
+
+// lembrar de colocar RESET no final de cada uso
+// exemplo: printf(Vermelho "bla bla bla", RESET); // acabou q nem usei nesse, mas fica para outros
+#define Vermelho "\x1b[31m"
+#define Verde "\x1b[32m"
+#define RESET "\x1b[0m"
+#define Amarelo "\x1b[33m"
+#define Azul "\x1b[35m"
+#define Ciano "\x1b[36m"
+
+// caso rode no windows
+#ifdef _WIN32
+#include <windows.h>
+#endif 
+
+// funcao de ler int geral que adotei p vida
+int ler_int(int *n, int min, int max) {
+    if(scanf("%d", n)!=1) {
+        while(getchar() != '\n');
+        printf("Entrada invalida! Digite um numero: ");
+        return 1;
+    }
+
+    if (*n < min || *n > max) {
+        printf("Opcao invalida! Digite um numero valido: ");
+        return 1;
+    }
+    return 0;
+}
+
+// atualiza as cartas com base no status
+void atualizar(int cartas[][4], char *emojis[], int status[][4], int *resto) {
+        system("clear");
+        printf("=*=*=*=JOGO DA MEMORIA=*=*=*=\n\n");
+        printf("    0      1      2      3\n");
+        printf("  ------------------------\n");
+
+        for(int i = 0; i < 4; i++) {
+            printf("%d |", i);
+            for(int j = 0; j < 4; j++) {
+                if(status[i][j] == 1) {
+                    int s = cartas[i][j];
+                    printf("[ %s ]", emojis[s]);
+                } else {
+                    printf("[ ?? ]");
+                }
+            }
+            printf("\n\n");
+        }
+    }
+
+// verifica se o usuario nao escolheu uma posicao ja certa
+int verificar_pos(int linha, int coluna, int status[][4]) {
+    if (status[linha][coluna] == 0) {
+        return 1;
+    } else {
+        printf("Espaco ja ocupado, digite outro!\n");
+    }
+    return 0;
+}
+
+// mostra rapidamente as que vc escolheu
+void aparecer_escolhidas(int status[][4], int linha, int coluna, int linha2, int coluna2, int cartas[][4], char *emojis[]) {
+    system("clear");
+    printf("=*=*=*=JOGO DA MEMORIA=*=*=*=\n\n");
+    printf("    0      1      2      3\n");
+    printf("  ------------------------\n");
+    int i, j;
+    for(i = 0; i < 4; i++) {
+        printf("%d |", i);
+        for(j = 0; j < 4; j++) {
+            if(status[i][j] == 1 || (i == linha && j == coluna) || (i == linha2 && j == coluna2)) {
+                printf("[ %s ] ", emojis[cartas[i][j]]);
+            } else {
+                printf("[ ?? ]");
+            }
+        }
+        printf("\n\n");
+    }
+    sleep(2);
+
+}
+
+void entrada(int status[][4], int cartas[][4], int *resto, char *emojis[], int *chances) {
+    int ok1=0, ok2=0;
+    int linha, coluna, linha2, coluna2;
+    do {
+        printf("Escolha a carta 1 (linha e coluna separada por espaço): ");
+        while(ler_int(&linha, 0, 3));
+        while(ler_int(&coluna, 0, 3));
+        ok1 = verificar_pos(linha, coluna, status);
+    } while(!ok1);
+
+    do {
+        printf("Escolha a carta 2 (linha e coluna separada por espaço): ");
+        while(ler_int(&linha2, 0, 3));
+        while(ler_int(&coluna2, 0, 3));
+
+        if (linha == linha2 && coluna == coluna2) {
+            printf("Voce escolheu a mesma carta duas vezes! Escolha outra.\n");
+            ok2 = 0;
+        } else {
+            ok2 = verificar_pos(linha2, coluna2, status);
+        }
+    } while (!ok2);
+
+    aparecer_escolhidas(status, linha, coluna, linha2, coluna2, cartas, emojis);
+    if(cartas[linha][coluna] == cartas[linha2][coluna2]) {
+        printf(Verde "Voce acertou um par!\n" RESET);
+            status[linha][coluna] = 1;
+            status[linha2][coluna2] = 1;
+            (*resto)--;
+            (*resto)--;
+    } else {
+        printf(Vermelho "Voce errou!\n" RESET);
+        (*chances)--;
+        sleep(1);
+    }
+}
+
+void Jogo() {
+    setlocale(LC_ALL, "");
+    srand(time(NULL));
+
+    // isso aq eh tipo um banco de dados
+    char *emojis[] = {"\U0001F436", "\U0001F431", "\U0001F98A", "\U0001F435", "\U0001F43B", "\U0001F437", "\U0001F438", "\U0001F981"};
+    int cart[16] = {
+        0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7
+    };
+
+    // aleatorio
+    for(int i = 15; i > 0; i--) {
+        int j = rand() % (i+1);
+        int temp = cart[i];
+        cart[i] = cart[j];
+        cart[j] = temp; 
+    }
+    int cartas[4][4];
+    int k = 0;
+
+    for(int i = 0; i < 4; i++) {
+        for(int j = 0; j < 4; j++) {
+            cartas[i][j] = cart[k];
+            k++;
+        }
+    }
+
+    // mostrar primeiro p ver a posicao e afins
+    system("clear");
+    printf("Memorize as posicoes das cartas!\n\n");
+    for(int i = 0; i < 4; i++) {
+        for(int j = 0; j < 4; j++) {
+            int id = cartas[i][j];
+            printf("[ %s ]", emojis[id]);
+        }
+        printf("\n\n");
+    }
+    sleep(5);
+
+    int status[4][4] = {0};
+    int resto = 16;
+    int chances = 5;
+    while (resto > 0 && chances > 0) {
+        atualizar(cartas, emojis, status, &resto);
+        entrada(status, cartas, &resto, emojis, &chances);
+    } 
+    system("clear");
+    if (chances == 0) {
+        printf(Vermelho "Jogo finalizado, VOCE PERDEU! :P\n\n" RESET);
+    } else {
+        printf(Verde "Jogo finalizado! VOCE GANHOU! :D\n\n" RESET);
+    }
+}
+
+int main () {
+    char r;
+    do {
+        printf("===============================\n");
+        printf(" Bem-vindo ao Jogo da Memoria! \n");
+        printf("===============================\n");
+        printf("Regras:\nAs cartas serao mostradas por 5 segundos\nPara selecionar as cartas digite o numero da posicao que deseja (2 valores)\n");
+        printf("Aperte qualquer tecla + ENTER para iniciar ou 0 para sair:\n");
+        scanf(" %c", &r);
+        if (r == '0') {
+            printf("Saindo...");
+            return 0;
+        } else {
+            Jogo();
+        }
+    } while (r != '0');
+    return 0; 
+}
