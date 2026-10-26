@@ -1,0 +1,296 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <time.h>
+
+void Preencher(char letras[]) {
+    for(int i = 0; i < 7; i++) {
+        letras[i] = '0';
+    }
+}
+
+void ImprimirLetras(char letras[]) {
+    printf("Letras erradas: %s\n", letras);
+}
+
+void Escolher_palavra(int *tamanho, char *escolhida) {
+    FILE *arquivo = fopen("palavras.txt", "r");
+    
+    if (arquivo == NULL) {
+        strcpy(escolhida, "PROGRAMACAO");
+        *tamanho = strlen(escolhida);
+        return;
+    }
+
+    int total = 0;
+    char a[50];
+    while (fgets(a, sizeof(a), arquivo) != NULL) {
+        // ignora linhas vazias
+        if (strlen(a) > 1) {
+            total++;
+        }
+    }
+
+    if (total == 0) {
+        strcpy(escolhida, "PROGRAMACAO");
+        *tamanho = strlen(escolhida);
+        fclose(arquivo);
+        return;
+    }
+
+    int sorteio = rand() % total;
+
+    rewind(arquivo);
+    int atual = 0;
+    while (fgets(a, sizeof(a), arquivo) != NULL) {
+        if (strlen(a) > 1) {
+            if (atual == sorteio) {
+                a[strcspn(a, "\n")] = '\0';
+                strcpy(escolhida, a);
+                *tamanho = strlen(escolhida);
+                break;
+            }
+            atual++;
+        }
+    }
+    
+    fclose(arquivo);
+}
+
+int Ganhar(int tamanho, char matriz[]){
+    for(int i = 0; i < tamanho; i++) {
+        if(matriz[i] == '_') {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void RevelarLetra(char letra, char *matriz, int pos) {
+    matriz[pos] = letra;
+}
+
+int Validade(char letra) {
+    char alfabeto[26];
+    for(int i = 0; i < 26; i++) {
+        alfabeto[i] = 'A' + i;
+    } 
+
+    for(int i = 0; i < 26; i++) {
+        if (letra == alfabeto[i]) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void Checagem(char letra, int *loop, char palavra[], int tamanho, char matriz[], char letras[]) {
+    int flag=1;
+    int pos;
+    for(int i = 0; i < tamanho; i++) {
+        if(letra == palavra[i]) {
+            pos = i;
+            RevelarLetra(letra, matriz, pos);
+            flag = 0;
+        }
+    }
+    if (flag) {
+        letras[*loop] = letra;
+        (*loop)++;
+    }
+}
+
+void Maius(char palavra[], int tamanho, char escolhida[]) {
+    for(int i = 0; i < tamanho; i++) {
+        palavra[i] = toupper(escolhida[i]);
+    }
+    palavra[tamanho] = '\0';
+}
+
+void Tracinhos(int tamanho, char *matriz) {
+    for (int i = 0; i < tamanho; i++) {
+        matriz[i] = '_';
+    }
+}
+
+void ImprimirLinha(char matriz[], int tamanho) {
+    for(int i = 0; i < tamanho; i++) {
+        printf("%c", matriz[i]);
+        printf(" ");
+    }
+}
+
+void ForcaInicial() {
+    printf("---------------\n");
+    printf("|      |      |\n");
+    printf("|             |\n");
+    printf("|             |\n");
+    printf("|             |\n");
+    printf("|             |\n");
+    printf("|             |\n");
+    printf("|             |\n");
+    printf("|             |\n");
+    printf("|             |\n");
+    printf("---------------\n");
+}
+
+int main () {
+
+    srand(time(NULL)); // horario
+
+    /////////////////////////////////////
+    int invalida, morreu=0, loop=0;
+    int tamanho;
+    char escolhida[50], letras[7];
+    Preencher(letras);
+    Escolher_palavra(&tamanho, escolhida);
+    char letra, palavra[tamanho];
+    // tracinhos
+    char matriz[tamanho+1];
+    /////////////////////////////////////
+
+    // deixa tudo maiusculo p comparar
+    Maius(palavra, tamanho, escolhida);
+    Tracinhos(tamanho, matriz);
+
+    // looping p pedir as letras
+    while(morreu==0) {
+
+        printf("\033[H\033[J");
+        ImprimirLinha(matriz, tamanho);
+        printf("\n");
+        if (loop == 0) {
+            ForcaInicial();
+        }
+        if (loop != 0) {
+            ImprimirLetras(letras);
+            switch(loop) {
+                case 1:
+                    printf("---------------\n");
+                    printf("|      |      |\n");
+                    printf("|     /^??    |\n");
+                    printf("|     ??_/    |\n");
+                    printf("|             |\n");
+                    printf("|             |\n");
+                    printf("|             |\n");
+                    printf("|             |\n");
+                    printf("|             |\n");
+                    printf("|             |\n");
+                    printf("---------------\n");
+                    break;
+                case 2:
+                    printf("---------------\n");
+                    printf("|      |      |\n");
+                    printf("|     /^??    |\n");
+                    printf("|     ??_/    |\n");
+                    printf("|      |      |\n");
+                    printf("|      |      |\n");
+                    printf("|      |      |\n");
+                    printf("|             |\n");
+                    printf("|             |\n");
+                    printf("|             |\n");
+                    printf("---------------\n");
+                    break;
+                case 3:
+                    printf("---------------\n");
+                    printf("|      |      |\n");
+                    printf("|     /^??    |\n");
+                    printf("|     ??_/    |\n");
+                    printf("|      |      |\n");
+                    printf("|      |      |\n");
+                    printf("|      |      |\n");
+                    printf("|     /       |\n");
+                    printf("|    /        |\n");
+                    printf("|   o         |\n");
+                    printf("---------------\n");
+                    break;
+                case 4:
+                    printf("---------------\n");
+                    printf("|      |      |\n");
+                    printf("|     /^??    |\n");
+                    printf("|     ??_/    |\n");
+                    printf("|      |      |\n");
+                    printf("|      |      |\n");
+                    printf("|      |      |\n");
+                    printf("|     / ??    |\n");
+                    printf("|    /   ??   |\n");
+                    printf("|   o     b   |\n");
+                    printf("---------------\n");
+                    break;
+                case 5:
+                    printf("---------------\n");
+                    printf("|      |      |\n");
+                    printf("|     /^??    |\n");
+                    printf("|     ??_/    |\n");
+                    printf("|     /|      |\n");
+                    printf("|    / |      |\n");
+                    printf("|   *  |      |\n");
+                    printf("|     / ??    |\n");
+                    printf("|    /   ??   |\n");
+                    printf("|   o     b   |\n");
+                    printf("---------------\n");
+                    break;
+                case 6: 
+                    printf("---------------\n");
+                    printf("|      |      |\n");
+                    printf("|     /^??    |\n");
+                    printf("|     ??_/    |\n");
+                    printf("|     /|??    |\n");
+                    printf("|    / | ??   |\n");
+                    printf("|   *  |  *   |\n");
+                    printf("|     / ??    |\n");
+                    printf("|    /   ??   |\n");
+                    printf("|   o     b   |\n");
+                    printf("---------------\n");
+                    break;
+                default:
+                    printf("\033[H\033[J");
+                    printf("=======================================\n");
+                    printf("| |*******     ^     |     |  |****** |\n");
+                    printf("| |           / ??   |??  /|  |       |\n");
+                    printf("| |   ***|   /***??  | ??/ |  |*****  |\n");
+                    printf("| |______|  /     ?? |     |  |______ |\n");
+                    printf("|                                     |\n");
+                    printf("| |*****|  |      /  |******  |*****  |\n");
+                    printf("| |     |   ??   /   |        |____|  |\n");
+                    printf("| |     |   ??  /    |*****   |   ??  |\n");
+                    printf("| |_____|     ++     |______  |    ?? |\n");
+                    printf("=======================================\n");
+                    morreu = 1;
+                    printf("A palavra correta era: %s\n", palavra);
+                    return 0;
+                    break;
+            }
+        } 
+        printf("Digite uma letra: ");
+        scanf(" %c", &letra);
+        letra = toupper(letra);
+        invalida = Validade(letra);
+        if (invalida) {
+            printf("Entrada invalida! Precione ENTER para continuar...");
+            scanf(" %[^\n]", (char[10]){""}); 
+            continue;
+        }
+        ImprimirLinha(matriz, tamanho);
+        Checagem(letra, &loop, palavra, tamanho, matriz, letras);
+        int ganho = Ganhar(tamanho, matriz);
+        if (ganho) {
+            printf("\033[H\033[J");
+            printf("============================\n");
+            printf("| ??   /  |*****|  |     | |\n");
+            printf("|  ?? /   |     |  |     | |\n");
+            printf("|   ??    |     |  |     | |\n");
+            printf("|    ??   |_____|  |_____| |\n");
+            printf("|                          |\n");
+            printf("| |      |   ||   |??   /| |\n");
+            printf("| |      |   ||   | ?? / | |\n");
+            printf("| | / ?? |   ||   |  ??  | |\n");
+            printf("| |/   ??|   ||   |      | |\n");
+            printf("============================\n");
+            printf("Voce acertou! A palavra era %s\n", palavra);
+            return 0;
+        }
+    }
+    return 0;
+}
