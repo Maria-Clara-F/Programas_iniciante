@@ -1,0 +1,214 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <termios.h> 
+
+#define Vermelho "\x1b[31m"
+#define Verde "\x1b[32m"
+#define RESET "\x1b[0m"
+#define Amarelo "\x1B[33m"
+#define TAM_PALAVRA 5
+
+void configurarterminal(struct termios *antigo) {
+    struct termios novo;
+    tcgetattr(STDIN_FILENO, antigo);
+    novo = *antigo;
+    novo.c_lflag &= ~(ICANON | ECHO); 
+    tcsetattr(STDIN_FILENO, TCSANOW, &novo);
+}
+
+void restaurarterminal(struct termios *antigo) {
+    tcsetattr(STDERR_FILENO, TCSANOW, antigo);
+    printf("\e[?25h\e[0m");
+}
+
+void gerador(char senha[]) {
+    FILE *arquivo = fopen("termo.txt", "r");
+    
+    if (arquivo == NULL) {
+        strcpy(senha, "TERMO");
+        return;
+    }
+
+    int total = 0;
+    char a[50];
+    while (fgets(a, sizeof(a), arquivo) != NULL) {
+        if (strlen(a) > 1) {
+            total++;
+        }
+    }
+
+    if (total == 0) {
+        strcpy(senha, "TERMO");
+        fclose(arquivo);
+        return;
+    }
+
+    int sorteio = rand() % total;
+
+    rewind(arquivo);
+    int atual = 0;
+    while (fgets(a, sizeof(a), arquivo) != NULL) {
+        if (strlen(a) > 1) {
+            if (atual == sorteio) {
+                a[strcspn(a, "\n")] = '\0';
+                strcpy(senha, a);
+                break;
+            }
+            atual++;
+        }
+    }
+    
+    fclose(arquivo);
+} 
+
+int ganhador(char senha[], char palpite[]) {
+    if(strcmp(senha, palpite) == 0) {
+        printf(Verde "Parabens! Voce acertou!\n" RESET);
+        return 0;
+    }
+    return 1;
+}
+
+int comparar(char senha[], int *chances, char palpite[]) {
+    int estado[TAM_PALAVRA] ={0}; 
+    int senha_usada[TAM_PALAVRA] = {0};
+
+    for (int i = 0; i < TAM_PALAVRA; i++) {
+        if (senha[i] == palpite[i]) {
+            estado[i] = 2;
+            senha_usada[i] = 1;
+        }
+    }
+
+    for(int i = 0; i < TAM_PALAVRA; i++) {
+        if(estado[i]!=2) {
+            for(int j = 0; j < TAM_PALAVRA; j++) {
+                if(!senha_usada[j] && senha[j] == palpite[i]) {
+                    senha_usada[j] = 1;
+                    estado[i] = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    for(int i = 0; i < TAM_PALAVRA; i++) {
+        if(estado[i] == 2) {
+            printf(Verde"%c" RESET, palpite[i]);
+        } else if (estado[i] == 1) {
+            printf(Amarelo"%c" RESET, palpite[i]);
+        } else {
+            printf("%c", palpite[i]);
+        }
+    }
+    printf("\r\n");
+
+    (*chances)--;
+    return ganhador(senha, palpite);
+}
+
+int ler_char(char palpite[]) {
+    struct termios terminalOriginal;
+    configurarterminal(&terminalOriginal);
+
+    char entrada[TAM_PALAVRA + 1];
+
+    for(int i = 0; i < TAM_PALAVRA; i++) {
+        entrada[i] = ' ';
+    }
+    entrada[TAM_PALAVRA] = '\0';
+
+    for(int atual = 0; atual < TAM_PALAVRA; ) {
+        printf("\r");
+
+        for(int i = 0; i < TAM_PALAVRA; i++) {
+            if (i < atual) {
+                printf("%c", entrada[i]); 
+            }
+        }
+        printf("\r");
+        if(atual > 0) {
+            printf("\e[%dC", atual);
+        }
+
+        printf("\e[?25h\e[5q");
+        fflush(stdout);
+
+        char ch = getchar();
+
+        if(ch == 127) {
+            if(atual > 0) {
+                atual--;
+                entrada[atual] = ' '; 
+            }
+            continue;
+        }
+        if(!isalpha(ch)) {
+            continue; 
+        }
+
+        entrada[atual] = toupper(ch);
+        atual++; 
+    }
+
+    printf("\r\e[K");
+    fflush(stdout);
+
+    restaurarterminal(&terminalOriginal);
+
+    strcpy(palpite, entrada);
+    return 0;
+}
+
+void jogo() {
+    char senha[TAM_PALAVRA+1];
+    int chances = 6;
+    char palpite[TAM_PALAVRA+2];
+    int c = 1;
+    gerador(senha);
+    do {
+        while(ler_char(palpite)!=0);
+        c = comparar(senha, &chances, palpite);
+    } while (chances > 0 && c!=0);
+
+    if(chances == 0 && c!=0) {
+        printf(Vermelho "Voce perdeu! A palavra era: %s\n" RESET, senha);
+    }
+}
+
+int main () {
+    int r;
+    srand(time(NULL));
+    
+    do {
+        printf("===========================\n");
+        printf("     BEM VINDO AO TERMO    \n");
+        printf("===========================\n");
+        printf("REGRAS:\nTente adivinhar uma PALAVRA de 5 caracteres\nPosicao certa e letra certa: LETRA VERDE\nPosicao errada letra certa: LETRA AMARELA\n6 tentativas\n");
+        printf("Selecione o modo de jogo:\n[0] Sair\n[1] Solo\n[2] Duo\n[3] Quarteto\n");
+        
+        if (scanf("%d", &r) != 1) {
+            while(getchar()!='\n'); // Limpa entrada inválida (letras)
+            printf("Entrada invalida.\n");
+            continue;
+        }
+        while(getchar()!='\n');
+
+        if (r == 0) {
+            printf("Saindo...\n");
+            break;
+        } else if (r == 1) {
+            jogo();
+        } else if (r == 2 || r == 3) {
+            printf("Modo ainda nao implementado!\n");
+        } else {
+            printf("Opcao invalida.\n");
+        }
+    } while(r != 0);
+
+    return 0;
+}
